@@ -10,7 +10,8 @@ import UIKit
 final class HomeViewController: UIViewController {
     
     // MARK: - Properties
-    let myImageViewModel = MyImageViewModel()
+    private let myImageViewModel = MyImageViewModel()
+    private var observation: NSKeyValueObservation!
     
     private let homeTableView: UITableView = {
         let tv = UITableView()
@@ -69,21 +70,29 @@ final class HomeViewController: UIViewController {
         homeTableView.delegate = self
     }
     
+    private func reset(cell: HomeTableViewCell) {
+        cell.myImageView.image = .init(systemName: "person.fill")
+        cell.progressView.progress = 0
+    }
+    
     @objc func allImageDownloadButtonTapped(_ sender: UIButton) {
         Task {
             for index in 0..<myImageViewModel.myImageList.count {
                 let indexPath = IndexPath(row: index, section: 0)
                 let cell = homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
+                reset(cell: cell)
                 
                 
-                if let data = try? await myImageViewModel.downloadImage(urlString: myImageViewModel.myImageList[index].urlString),
-                   let image = UIImage(data: data) {
-                    cell.myImageView.image = image
-                } else {
-                    print(DownloadError.invalidData)
-                    
-                    cell.myImageView.image = UIImage(systemName: "person.fill")
-                    continue
+                try await myImageViewModel.downloadImage(from: myImageViewModel.myImageList[index].urlString) { image, progress in
+                    DispatchQueue.main.async {
+                        cell.progressView.progress = Float(progress.fractionCompleted)
+                        
+                        guard let image = image else {
+                            print(DownloadError.invalidData)
+                            return
+                        }
+                        cell.myImageView.image = image
+                    }
                 }
             }
         }
@@ -93,17 +102,19 @@ final class HomeViewController: UIViewController {
         Task {
             let indexPath = IndexPath(row: sender.tag, section: 0)
             let cell = homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
+            reset(cell: cell)
             
-            guard
-                let data = try? await myImageViewModel.downloadImage(urlString: myImageViewModel.myImageList[sender.tag].urlString),
-                let image = UIImage(data: data)
-            else {
-                print(DownloadError.invalidData)
-                
-                cell.myImageView.image = UIImage(systemName: "person.fill")
-                return
+            try await myImageViewModel.downloadImage(from: myImageViewModel.myImageList[sender.tag].urlString) { image, progress in
+                DispatchQueue.main.async {
+                    cell.progressView.progress = Float(progress.fractionCompleted)
+                    
+                    guard let image = image else {
+                        print(DownloadError.invalidData)
+                        return
+                    }
+                    cell.myImageView.image = image
+                }
             }
-            cell.myImageView.image = image
         }
     }
 }

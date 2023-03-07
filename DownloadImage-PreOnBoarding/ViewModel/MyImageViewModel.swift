@@ -11,6 +11,8 @@ import UIKit
 enum DownloadError: Error {
     case invalidResponse
     case invalidData
+    case invalidURL
+    case error
 }
 
 final class MyImageViewModel {
@@ -22,13 +24,45 @@ final class MyImageViewModel {
         MyImage(urlString: "https://cdn.pixabay.com/photo/2015/08/30/10/58/cat-914110_1280.jpg"),
         MyImage(urlString: "https://cdn.pixabay.com/photo/2015/11/15/22/09/cat-1044914_1280.jpg")
     ]
+    var task: URLSessionDataTask!
+    var observation: NSKeyValueObservation!
+    var image: UIImage = .init(systemName: "person.fill")!
+    var progress: Progress = Progress()
     
-    func downloadImage(urlString: String) async throws -> Data {
-        let url = URL(string: urlString)!
-        let (data, response) = try await URLSession.shared.data(from: url)
-        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-            throw DownloadError.invalidResponse
+    func downloadImage(from urlString: String, completion: @escaping ((UIImage?, Progress) -> ())) async throws {
+        guard let url = URL(string: urlString) else {
+            throw DownloadError.invalidURL
         }
-        return data
+        
+        let request = URLRequest(url: url)
+        
+        let urlSession = URLSession.shared
+        task = urlSession.dataTask(with: request) { data, response, error in
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                print(DownloadError.invalidResponse)
+                return
+            }
+            guard let data = data, error == nil else {
+                print(error ?? DownloadError.error)
+                return
+            }
+            guard let image = UIImage(data: data) else {
+                print(DownloadError.invalidData)
+                return
+            }
+            self.image = image
+            print("이미지 다운 완료!")
+            completion(self.image, self.progress)
+            self.image = .init(systemName: "person.fill")!
+        }
+        
+        observation = task.progress.observe(\.fractionCompleted,
+                                             options: [.new],
+                                             changeHandler: { progress, change in
+            self.progress = progress
+            print("프로그래스 - \(progress.fractionCompleted)")
+            completion(self.image, self.progress)
+        })
+        task.resume()
     }
 }

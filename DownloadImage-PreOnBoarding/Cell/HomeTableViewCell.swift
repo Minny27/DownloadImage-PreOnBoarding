@@ -19,20 +19,13 @@ final class HomeTableViewCell: UITableViewCell {
         return iv
     }()
     
-    let prograssBarContainerView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .systemGray3
-        view.layer.cornerRadius = 8
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
-    
-    let prograssBarView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .systemBlue
-        view.layer.cornerRadius = 8
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
+    let progressView: UIProgressView = {
+        let pv = UIProgressView()
+        pv.backgroundColor = .systemGray3
+        pv.progressTintColor = .systemBlue
+        pv.layer.cornerRadius = 8
+        pv.translatesAutoresizingMaskIntoConstraints = false
+        return pv
     }()
     
     let downloadButton: UIButton = {
@@ -50,6 +43,12 @@ final class HomeTableViewCell: UITableViewCell {
         setupCell()
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        myImageView.image = .init(systemName: "person.fill")
+    }
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -57,35 +56,26 @@ final class HomeTableViewCell: UITableViewCell {
     private func setupCell() {
         contentView.addSubview(myImageView)
         NSLayoutConstraint.activate([
-            myImageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-            myImageView.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: 16),
-            myImageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
-            myImageView.widthAnchor.constraint(equalToConstant: 120)
+            myImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            myImageView.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: 20),
+            myImageView.widthAnchor.constraint(equalTo: myImageView.heightAnchor, multiplier: 1),
+            myImageView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.75)
         ])
         
-        contentView.addSubview(prograssBarContainerView)
+        contentView.addSubview(progressView)
         NSLayoutConstraint.activate([
-            prograssBarContainerView.leftAnchor.constraint(equalTo: myImageView.rightAnchor, constant: 12),
-            prograssBarContainerView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            prograssBarContainerView.widthAnchor.constraint(equalToConstant: 100),
-            prograssBarContainerView.heightAnchor.constraint(equalToConstant: 10)
-            
-        ])
-        
-        prograssBarContainerView.addSubview(prograssBarView)
-        NSLayoutConstraint.activate([
-            prograssBarView.topAnchor.constraint(equalTo: prograssBarContainerView.topAnchor),
-            prograssBarView.leftAnchor.constraint(equalTo: prograssBarContainerView.leftAnchor),
-            prograssBarView.bottomAnchor.constraint(equalTo: prograssBarContainerView.bottomAnchor),
-            prograssBarView.widthAnchor.constraint(equalToConstant: 50)
+            progressView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            progressView.leftAnchor.constraint(equalTo: myImageView.rightAnchor, constant: 16),
+            progressView.widthAnchor.constraint(equalTo: contentView.widthAnchor, multiplier: 0.4),
+            progressView.heightAnchor.constraint(equalToConstant: 10)
         ])
         
         contentView.addSubview(downloadButton)
         NSLayoutConstraint.activate([
-            downloadButton.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -16),
             downloadButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            downloadButton.widthAnchor.constraint(equalToConstant: 80),
-            downloadButton.heightAnchor.constraint(equalToConstant: 60)
+            downloadButton.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -20),
+            downloadButton.widthAnchor.constraint(equalTo: downloadButton.heightAnchor, multiplier: 1.5),
+            downloadButton.heightAnchor.constraint(equalToConstant: 40)
         ])
     }
 }
