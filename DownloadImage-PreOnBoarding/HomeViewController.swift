@@ -76,14 +76,13 @@ final class HomeViewController: UIViewController {
     }
     
     @objc func allImageDownloadButtonTapped(_ sender: UIButton) {
-        Task {
-            for index in 0..<myImageViewModel.myImageList.count {
+        Task.detached(operation: {
+            for index in 0..<self.myImageViewModel.myImageList.count {
                 let indexPath = IndexPath(row: index, section: 0)
-                let cell = homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
-                reset(cell: cell)
+                let cell = await self.homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
+                await self.reset(cell: cell)
                 
-                
-                try await myImageViewModel.downloadImage(from: myImageViewModel.myImageList[index].urlString) { image, progress in
+                try await self.myImageViewModel.downloadImage(from: self.myImageViewModel.myImageList[index].urlString) { image, progress in
                     DispatchQueue.main.async {
                         cell.progressView.progress = Float(progress.fractionCompleted)
                         
@@ -95,16 +94,16 @@ final class HomeViewController: UIViewController {
                     }
                 }
             }
-        }
+        })
     }
     
     @objc func downloadButtonTapped(_ sender: UIButton) {
-        Task {
-            let indexPath = IndexPath(row: sender.tag, section: 0)
-            let cell = homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
-            reset(cell: cell)
+        Task.detached(operation: {
+            let indexPath = await IndexPath(row: sender.tag, section: 0)
+            let cell = await self.homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
+            await self.reset(cell: cell)
             
-            try await myImageViewModel.downloadImage(from: myImageViewModel.myImageList[sender.tag].urlString) { image, progress in
+            try await self.myImageViewModel.downloadImage(from: self.myImageViewModel.myImageList[sender.tag].urlString) { image, progress in
                 DispatchQueue.main.async {
                     cell.progressView.progress = Float(progress.fractionCompleted)
                     
@@ -115,7 +114,7 @@ final class HomeViewController: UIViewController {
                     cell.myImageView.image = image
                 }
             }
-        }
+        })
     }
 }
 
