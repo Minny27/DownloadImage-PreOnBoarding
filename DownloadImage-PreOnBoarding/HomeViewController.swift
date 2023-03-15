@@ -76,45 +76,50 @@ final class HomeViewController: UIViewController {
     }
     
     @objc func allImageDownloadButtonTapped(_ sender: UIButton) {
-        Task.detached(operation: {
-            for index in 0..<self.myImageViewModel.myImageList.count {
-                let indexPath = IndexPath(row: index, section: 0)
-                let cell = await self.homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
-                await self.reset(cell: cell)
+        Task {
+            for cell in self.homeTableView.visibleCells as! [HomeTableViewCell] {
+                self.reset(cell: cell)
                 
-                try await self.myImageViewModel.downloadImage(from: self.myImageViewModel.myImageList[index].urlString) { image, progress in
+                try await self.myImageViewModel.downloadImage(from: self.myImageViewModel.myImageList[cell.tag].urlString) { image in
+                    
                     DispatchQueue.main.async {
-                        cell.progressView.progress = Float(progress.fractionCompleted)
-                        
-                        guard let image = image else {
-                            print(DownloadError.invalidData)
-                            return
-                        }
-                        cell.myImageView.image = image
+                        cell.progressView.progress = self.myImageViewModel.progress
                     }
-                }
-            }
-        })
-    }
-    
-    @objc func downloadButtonTapped(_ sender: UIButton) {
-        Task.detached(operation: {
-            let indexPath = await IndexPath(row: sender.tag, section: 0)
-            let cell = await self.homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
-            await self.reset(cell: cell)
-            
-            try await self.myImageViewModel.downloadImage(from: self.myImageViewModel.myImageList[sender.tag].urlString) { image, progress in
-                DispatchQueue.main.async {
-                    cell.progressView.progress = Float(progress.fractionCompleted)
                     
                     guard let image = image else {
                         print(DownloadError.invalidData)
                         return
                     }
+                    
+                    DispatchQueue.main.async {
+                        cell.myImageView.image = image
+                    }
+                }
+                
+            }
+        }
+    }
+    
+    @objc func downloadButtonTapped(_ sender: UIButton) {
+        Task {
+            let indexPath = IndexPath(row: sender.tag, section: 0)
+            let cell = self.homeTableView.cellForRow(at: indexPath) as! HomeTableViewCell
+            self.reset(cell: cell)
+            
+            try await self.myImageViewModel.downloadImage(from: self.myImageViewModel.myImageList[sender.tag].urlString) { image in
+                
+                guard let image = image else {
+                    DispatchQueue.main.async {
+                        cell.progressView.progress = self.myImageViewModel.progress
+                    }
+                    return
+                }
+                
+                DispatchQueue.main.async {
                     cell.myImageView.image = image
                 }
             }
-        })
+        }
     }
 }
 
@@ -126,6 +131,7 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: HomeTableViewCell.identifier,
                                                  for: indexPath) as! HomeTableViewCell
+        cell.tag = indexPath.row
         cell.selectionStyle = .none
         cell.downloadButton.tag = indexPath.row
         cell.downloadButton.addTarget(self,
